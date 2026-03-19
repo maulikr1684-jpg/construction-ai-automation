@@ -1,1 +1,603 @@
-
+{
+  "name": "Construction Automation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "authentication": "airtableTokenApi",
+        "baseId": {
+          "__rl": true,
+          "value": "appCohtsl181u6cY8",
+          "mode": "id"
+        },
+        "tableId": {
+          "__rl": true,
+          "value": "tblOcUufNs3do5CD8",
+          "mode": "id"
+        },
+        "triggerField": "createdTime",
+        "downloadAttachments": true,
+        "downloadFieldNames": "File Upload",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.airtableTrigger",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        -160
+      ],
+      "id": "58e36856-d15a-4d98-862b-604d7ee4451e",
+      "name": "Airtable Trigger",
+      "alwaysOutputData": false,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "yNHCFGLqXbaJT34W",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6af83f65-60ef-458f-8873-ae01d9fd99f5",
+              "leftValue": "={{$json[\"fields\"][\"File Upload\"]}}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        176,
+        -160
+      ],
+      "id": "6cd7f232-ed5d-4e93-8db8-7ecb8086c4e8",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "url": "={{$json[\"fields\"][\"File Upload\"][0][\"url\"]}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        448,
+        -256
+      ],
+      "id": "cad93e35-c9ab-4fec-8127-b1525aac02a5",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        -64
+      ],
+      "id": "4c3abee5-0384-4ffa-a918-9a1e4dfca89f",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the following construction document and extract structured information.\n\nReturn ONLY valid JSON in this format:\n\n{\n  \"project_name\": \"\",\n  \"work_completed\": \"\",\n  \"issues_or_delays\": \"\",\n  \"important_updates\": \"\"\n}\n\nDocument:\n{{$json.text}}",
+        "options": {
+          "systemMessage": "You are a document summarization assistant. Provide clear, concise summaries of documents."
+        }
+      },
+      "id": "84016654-08d9-4448-b639-67301dabba93",
+      "name": "Summarize with AI",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        896,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "e34bc0ca-172f-43e2-ab43-6325b205e9a6",
+      "name": "Google Gemini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        976,
+        160
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "EywX6DNRsCgggktT",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "126bdf27-b498-43f5-ba7b-b4dc469c7fd3",
+              "name": "Project Name",
+              "value": "={{ JSON.parse($json.output.replace(/```json|```/g, '')).project_name }}",
+              "type": "string"
+            },
+            {
+              "id": "de972dc8-8027-4c61-9561-502bf6764d06",
+              "name": "Work Completed",
+              "value": "={{ JSON.parse($json.output.replace(/```json|```/g, '')).work_completed }}",
+              "type": "string"
+            },
+            {
+              "id": "4c16653a-9cfa-44bb-a009-01d9d710d11c",
+              "name": "Issues",
+              "value": "={{ JSON.parse($json.output.replace(/```json|```/g, '')).issues_or_delays }}",
+              "type": "string"
+            },
+            {
+              "id": "321f3b7f-cd70-4fd3-a9fb-4b8ba69905a0",
+              "name": "Important Updates",
+              "value": "={{ JSON.parse($json.output.replace(/```json|```/g, '')).important_updates }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1248,
+        -64
+      ],
+      "id": "bb06a37b-de17-48a6-8c22-811bc6d3f8ef",
+      "name": "Structure data"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appCohtsl181u6cY8",
+          "mode": "list",
+          "cachedResultName": "Construction Project Automation",
+          "cachedResultUrl": "https://airtable.com/appCohtsl181u6cY8"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblOcUufNs3do5CD8",
+          "mode": "list",
+          "cachedResultName": "Projects",
+          "cachedResultUrl": "https://airtable.com/appCohtsl181u6cY8/tblOcUufNs3do5CD8"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Summary": "=Project: {{$json[\"Project Name\"]}}  Work Completed: {{$json[\"Work Completed\"]}}  Issues: {{$json[\"Issues\"]}}  Updates: {{$json[\"Important Updates\"]}}",
+            "id": "={{$node[\"Airtable Trigger\"].json[\"id\"]}}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Project ID",
+              "displayName": "Project ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Contractor Name",
+              "displayName": "Contractor Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Project Type",
+              "displayName": "Project Type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Residential ",
+                  "value": "Residential "
+                },
+                {
+                  "name": "Commercial",
+                  "value": "Commercial"
+                },
+                {
+                  "name": "Renovation",
+                  "value": "Renovation"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Budget",
+              "displayName": "Budget",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "File Upload",
+              "displayName": "File Upload",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Submitted",
+                  "value": "Submitted"
+                },
+                {
+                  "name": "Under Review",
+                  "value": "Under Review"
+                },
+                {
+                  "name": "Approved",
+                  "value": "Approved"
+                },
+                {
+                  "name": "Rejected",
+                  "value": "Rejected"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "createdTime",
+              "displayName": "createdTime",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1472,
+        -64
+      ],
+      "id": "faeee2a0-e269-47c2-b236-84c50df3965e",
+      "name": "Update record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "yNHCFGLqXbaJT34W",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "maulikr1684@gmail.com",
+        "subject": "=Project Update",
+        "emailType": "text",
+        "message": "=New construction report processed.  \n\nSummary :{{ $json.fields.Summary }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1696,
+        -64
+      ],
+      "id": "11344703-b5a5-4a16-9c5a-f06e3a712e52",
+      "name": "Send a message",
+      "webhookId": "6e4a2794-c79a-493b-b813-60820fb6d861",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZpJd6VOebezXu9yi",
+          "name": "Gmail account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "maulikr1684@gmail.com",
+        "subject": "Invalid File Type Detected",
+        "emailType": "text",
+        "message": "The uploaded document could not be processed.  Reason: Only PDF files are supported.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        352,
+        -48
+      ],
+      "id": "91ceedf0-c7a2-4d49-8dd8-07bff602891c",
+      "name": "Send a message1",
+      "webhookId": "442d758f-743f-4d7c-9141-11407fd7b8ac",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "LbP4CmG2mNBxVOdy",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "196fe64a-3c2b-4bb8-b762-4d8f9e466f93",
+              "leftValue": "={{$json.fields[\"File Upload\"][0].type}}",
+              "rightValue": "=application/pdf",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        720,
+        -256
+      ],
+      "id": "dd36e630-db33-4aa5-9617-ff189baf0814",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "sendTo": "maulikr1684@gmail.com",
+        "subject": "Invalid File Type Detected",
+        "emailType": "text",
+        "message": "The uploaded document could not be processed.  Reason: Only PDF files are supported.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        944,
+        -240
+      ],
+      "id": "25900915-e869-4064-923a-c8b0407aeefc",
+      "name": "Send a message2",
+      "webhookId": "0a18d0f4-4d00-4cc3-8097-ac5108003f61",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "LbP4CmG2mNBxVOdy",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Airtable Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Summarize with AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summarize with AI",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize with AI": {
+      "main": [
+        [
+          {
+            "node": "Structure data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structure data": {
+      "main": [
+        [
+          {
+            "node": "Update record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update record": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message1": {
+      "main": [
+        []
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a11dfeb9-b22f-4b33-8e2d-04f1aa95f3e0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b6fe6e0d6a21570a10e69e5e3f08cfc7dab9251cb5fc029bb24f9e524f396b84"
+  },
+  "id": "mG3OTFFVsqEQJMTv",
+  "tags": []
+}
